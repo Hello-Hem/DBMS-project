@@ -1,22 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { packageService } from '@/lib/database/packages';
-import { testConnection } from '@/lib/db';
+import { mockPackages } from '@/lib/db-mock';
 
 // GET /api/packages/[id] - Get package details
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const isConnected = await testConnection();
-    if (!isConnected) {
-      return NextResponse.json(
-        { error: 'Database connection failed' },
-        { status: 500 }
-      );
-    }
-
-    const packageId = parseInt(params.id);
+    const { id } = await params;
+    const packageId = parseInt(id);
     if (isNaN(packageId)) {
       return NextResponse.json(
         { error: 'Invalid package ID' },
@@ -24,17 +16,8 @@ export async function GET(
       );
     }
 
-    // Check if include capacity is requested
-    const { searchParams } = new URL(request.url);
-    const includeCapacity = searchParams.get('includeCapacity') === 'true';
-
-    let packageData;
-    if (includeCapacity) {
-      packageData = await packageService.getPackageWithCapacity(packageId);
-    } else {
-      packageData = await packageService.getPackageById(packageId);
-    }
-
+    // Find mock package
+    const packageData = mockPackages.find(p => p.PackageID === packageId);
     if (!packageData) {
       return NextResponse.json(
         { error: 'Package not found' },
@@ -42,7 +25,14 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ package: packageData });
+    const packageWithCapacity = {
+      ...packageData,
+      capacity_left: Math.floor(Math.random() * 15) + 5,
+      booked_capacity: 20 - Math.floor(Math.random() * 15) + 5,
+      availability_percentage: Math.floor(Math.random() * 50) + 25
+    };
+
+    return NextResponse.json({ package: packageWithCapacity });
 
   } catch (error) {
     console.error('Get package error:', error);

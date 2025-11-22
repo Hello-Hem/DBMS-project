@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { packageService } from '@/lib/database/packages';
-import { testConnection } from '@/lib/db';
+import { testConnection, mockPackages } from '@/lib/db-mock';
 
 // GET /api/packages - Get packages with filtering
 export async function GET(request: NextRequest) {

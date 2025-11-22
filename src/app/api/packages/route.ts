@@ -4,47 +4,31 @@ import { testConnection, mockPackages } from '@/lib/db-mock';
 // GET /api/packages - Get packages with filtering
 export async function GET(request: NextRequest) {
   try {
-    // Test database connection
-    const isConnected = await testConnection();
-    if (!isConnected) {
-      return NextResponse.json(
-        { error: 'Database connection failed' },
-        { status: 500 }
-      );
-    }
-
     const { searchParams } = new URL(request.url);
-
-    // Parse query parameters
-    const filters = {
-      destination: searchParams.get('destination') || undefined,
-      startDate: searchParams.get('startDate') ? new Date(searchParams.get('startDate')!) : undefined,
-      endDate: searchParams.get('endDate') ? new Date(searchParams.get('endDate')!) : undefined,
-      minPrice: searchParams.get('minPrice') ? parseFloat(searchParams.get('minPrice')!) : undefined,
-      maxPrice: searchParams.get('maxPrice') ? parseFloat(searchParams.get('maxPrice')!) : undefined,
-      minCapacity: searchParams.get('minCapacity') ? parseInt(searchParams.get('minCapacity')!) : undefined,
-      keyword: searchParams.get('keyword') || undefined,
-      page: searchParams.get('page') ? parseInt(searchParams.get('page')!) : 1,
-      limit: searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 12
-    };
-
-    // Handle different query types
     const type = searchParams.get('type');
+    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 12;
 
+    // Return mock packages for now
+    let packages = mockPackages.map(p => ({
+      ...p,
+      capacity_left: Math.floor(Math.random() * 15) + 5,
+      booked_capacity: 20 - Math.floor(Math.random() * 15) + 5
+    }));
+
+    // If featured type, only return featured packages
     if (type === 'featured') {
-      const limit = filters.limit || 6;
-      const packages = await packageService.getFeaturedPackages(limit);
-      return NextResponse.json({ packages });
+      packages = packages.filter(p => p.Featured).slice(0, limit);
     }
 
-    if (type === 'search') {
-      const result = await packageService.searchPackages(filters);
-      return NextResponse.json(result);
-    }
-
-    // Default: get featured packages
-    const packages = await packageService.getFeaturedPackages(filters.limit);
-    return NextResponse.json({ packages });
+    return NextResponse.json({
+      packages,
+      pagination: {
+        page: 1,
+        limit,
+        total: packages.length,
+        totalPages: 1
+      }
+    });
 
   } catch (error) {
     console.error('Packages API error:', error);

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { packageService } from '@/lib/database/packages';
-import { testConnection } from '@/lib/db';
+import { mockPackages } from '@/lib/db-mock';
 
 // GET /api/packages/[id]/availability - Check package availability
 export async function GET(

@@ -102,6 +102,16 @@ CREATE TABLE HotelRoom (
     INDEX idx_hotelroom_status (Status)
 );
 
+-- Countries table for destinations
+CREATE TABLE Country (
+    Country VARCHAR(100) PRIMARY KEY,
+    CountryName VARCHAR(100) NOT NULL,
+    Continent VARCHAR(50),
+    Currency VARCHAR(10),
+    Language VARCHAR(100),
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Packages table - travel packages with capacity and pricing
 CREATE TABLE Package (
     PackageID INT AUTO_INCREMENT PRIMARY KEY,
@@ -126,16 +136,6 @@ CREATE TABLE Package (
     INDEX idx_package_status (Status),
     INDEX idx_package_destination (Destination),
     INDEX idx_package_featured (Featured)
-);
-
--- Countries table for destinations
-CREATE TABLE Country (
-    Country VARCHAR(100) PRIMARY KEY,
-    CountryName VARCHAR(100) NOT NULL,
-    Continent VARCHAR(50),
-    Currency VARCHAR(10),
-    Language VARCHAR(100),
-    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- PackageSupplier table - link packages to suppliers

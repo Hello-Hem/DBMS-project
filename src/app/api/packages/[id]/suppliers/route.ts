@@ -5,9 +5,10 @@ import { testConnection } from '@/lib/db';
 // GET /api/packages/[id]/suppliers - Get package suppliers
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const isConnected = await testConnection();
     if (!isConnected) {
       return NextResponse.json(
@@ -16,7 +17,7 @@ export async function GET(
       );
     }
 
-    const packageId = parseInt(params.id);
+    const packageId = parseInt(id);
     if (isNaN(packageId)) {
       return NextResponse.json(
         { error: 'Invalid package ID' },

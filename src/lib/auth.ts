@@ -1,7 +1,8 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
-import { db } from './db';
+// Use mock auth for development without database
+// import { db } from './db';
 
 // Define user types
 export interface AuthUser {

@@ -1,0 +1,14 @@
+{
+  "name": "test-auth",
+  "version": "1.0.0",
+  "description": "Test authentication and database connection",
+  "scripts": {
+    "test:db": "ts-node -r dotenv/config src/lib/test-db.ts",
+    "test:auth": "echo Run npm run dev and visit http://localhost:3000/login"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.1",
+    "dotenv": "^16.0.0"
+  }
+}

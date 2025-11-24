@@ -1,67 +1,92 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { signIn, getSession } from 'next-auth/react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-import { Eye, EyeOff, Mail, Lock, User, Briefcase, Shield } from 'lucide-react';
+import { useState } from "react";
+import { signIn, getSession } from "next-auth/react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { Eye, EyeOff, Mail, Lock, User, Briefcase, Shield } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get('redirect') || '/dashboard';
+  const redirect = searchParams.get("redirect") || "/dashboard";
 
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    role: 'customer' as 'customer' | 'agent' | 'admin'
+    email: "",
+    password: "",
+    role: "customer" as "customer" | "agent" | "admin",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
-      const result = await signIn('credentials', {
+      console.log("🔐 Attempting login:", {
+        email: formData.email,
+        role: formData.role,
+      });
+
+      const result = await signIn("credentials", {
         email: formData.email,
         password: formData.password,
         role: formData.role,
-        redirect: false
+        redirect: false,
+        callbackUrl: "/",
       });
 
+      console.log("📡 Login result:", result);
+
       if (result?.error) {
-        setError('Invalid credentials. Please try again.');
+        console.error("❌ Login failed:", result.error);
+        setError(
+          `Login failed: ${result.error}. Please check your credentials and try again.`
+        );
+        setLoading(false);
         return;
       }
 
       if (result?.ok) {
+        console.log("✅ Login successful, getting session...");
         // Get the session to determine the correct redirect
         const session = await getSession();
-        if (session) {
+        console.log("👤 Session:", session);
+
+        if (session?.user) {
           // Redirect based on user role
           const roleRedirects = {
-            customer: '/dashboard',
-            agent: '/agent/dashboard',
-            admin: '/admin/dashboard'
+            customer: "/dashboard",
+            agent: "/agent/dashboard",
+            admin: "/admin/dashboard",
           };
-          router.push(redirect.startsWith('/') ? redirect : roleRedirects[session.user.role as keyof typeof roleRedirects]);
+
+          const targetUrl =
+            roleRedirects[session.user.role as keyof typeof roleRedirects];
+          console.log("🔄 Redirecting to:", targetUrl);
+          router.push(targetUrl);
+        } else {
+          console.error("❌ Session not found after login");
+          setError("Session error. Please try again.");
+          setLoading(false);
         }
       }
     } catch (error) {
-      setError('An unexpected error occurred. Please try again.');
-    } finally {
+      console.error("❌ Unexpected error:", error);
+      setError("An unexpected error occurred. Please try again.");
       setLoading(false);
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData(prev => ({
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     }));
   };
 
@@ -75,8 +100,11 @@ export default function LoginPage() {
           Sign in to your account
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Or{' '}
-          <Link href="/register" className="font-medium text-blue-600 hover:text-blue-500">
+          Or{" "}
+          <Link
+            href="/register"
+            className="font-medium text-blue-600 hover:text-blue-500"
+          >
             create a new account
           </Link>
         </p>
@@ -93,17 +121,22 @@ export default function LoginPage() {
 
             {/* Role Selection */}
             <div>
-              <label htmlFor="role" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="role"
+                className="block text-sm font-medium text-gray-700"
+              >
                 I am a
               </label>
               <div className="mt-1 grid grid-cols-3 gap-3">
                 <button
                   type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, role: 'customer' }))}
+                  onClick={() =>
+                    setFormData((prev) => ({ ...prev, role: "customer" }))
+                  }
                   className={`flex flex-col items-center justify-center px-3 py-2 border rounded-md transition-colors ${
-                    formData.role === 'customer'
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-300 hover:border-gray-400'
+                    formData.role === "customer"
+                      ? "border-blue-500 bg-blue-50 text-blue-700"
+                      : "border-gray-300 hover:border-gray-400"
                   }`}
                 >
                   <User className="w-5 h-5 mb-1" />
@@ -111,11 +144,13 @@ export default function LoginPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, role: 'agent' }))}
+                  onClick={() =>
+                    setFormData((prev) => ({ ...prev, role: "agent" }))
+                  }
                   className={`flex flex-col items-center justify-center px-3 py-2 border rounded-md transition-colors ${
-                    formData.role === 'agent'
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-300 hover:border-gray-400'
+                    formData.role === "agent"
+                      ? "border-blue-500 bg-blue-50 text-blue-700"
+                      : "border-gray-300 hover:border-gray-400"
                   }`}
                 >
                   <Briefcase className="w-5 h-5 mb-1" />
@@ -123,11 +158,13 @@ export default function LoginPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, role: 'admin' }))}
+                  onClick={() =>
+                    setFormData((prev) => ({ ...prev, role: "admin" }))
+                  }
                   className={`flex flex-col items-center justify-center px-3 py-2 border rounded-md transition-colors ${
-                    formData.role === 'admin'
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-300 hover:border-gray-400'
+                    formData.role === "admin"
+                      ? "border-blue-500 bg-blue-50 text-blue-700"
+                      : "border-gray-300 hover:border-gray-400"
                   }`}
                 >
                   <Shield className="w-5 h-5 mb-1" />
@@ -138,7 +175,10 @@ export default function LoginPage() {
 
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Email address
               </label>
               <div className="mt-1 relative">
@@ -161,7 +201,10 @@ export default function LoginPage() {
 
             {/* Password */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Password
               </label>
               <div className="mt-1 relative">
@@ -171,7 +214,7 @@ export default function LoginPage() {
                 <input
                   id="password"
                   name="password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   required
                   value={formData.password}
@@ -202,13 +245,19 @@ export default function LoginPage() {
                   type="checkbox"
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+                <label
+                  htmlFor="remember-me"
+                  className="ml-2 block text-sm text-gray-900"
+                >
                   Remember me
                 </label>
               </div>
 
               <div className="text-sm">
-                <Link href="/forgot-password" className="font-medium text-blue-600 hover:text-blue-500">
+                <Link
+                  href="/forgot-password"
+                  className="font-medium text-blue-600 hover:text-blue-500"
+                >
                   Forgot your password?
                 </Link>
               </div>
@@ -227,19 +276,30 @@ export default function LoginPage() {
                     Signing in...
                   </div>
                 ) : (
-                  'Sign in'
+                  "Sign in"
                 )}
               </button>
             </div>
 
             {/* Demo accounts info */}
             <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-              <p className="text-sm text-blue-800 font-medium mb-2">Demo Accounts:</p>
+              <p className="text-sm text-blue-800 font-medium mb-2">
+                Test Accounts:
+              </p>
               <div className="space-y-1 text-xs text-blue-700">
-                <p><strong>Customer:</strong> customer@example.com / password123</p>
-                <p><strong>Agent:</strong> agent@example.com / password123</p>
-                <p><strong>Admin:</strong> admin@example.com / password123</p>
+                <p>
+                  <strong>Customer:</strong> customer@travel.com / password123
+                </p>
+                <p>
+                  <strong>Agent:</strong> agent@travel.com / password123
+                </p>
+                <p>
+                  <strong>Admin:</strong> admin@travel.com / password123
+                </p>
               </div>
+              <p className="text-xs text-blue-600 mt-2">
+                💡 Make sure database is set up (see TROUBLESHOOTING.md)
+              </p>
             </div>
           </form>
         </div>

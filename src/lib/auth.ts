@@ -7,21 +7,21 @@ const mockUsers = [
   {
     id: '1',
     email: 'admin@travel.com',
-    password: '$2a$10$r8JqJZjZjZjZjZjZjZjZjZOqQqQqQqQqQqQqQqQqQqQqQqQqQqQq', // 'admin123'
+    password: '$2b$10$ZJyGnLavIHjia7Wd13TYq.PM0s//uU4GeXLCvELdlpZNz7YZIOn96', // 'admin123'
     name: 'Admin User',
     role: 'admin' as const
   },
   {
     id: '2',
     email: 'agent@travel.com',
-    password: '$2a$10$r8JqJZjZjZjZjZjZjZjZjZOqQqQqQqQqQqQqQqQqQqQqQqQqQqQq', // 'agent123'
+    password: '$2b$10$GT5dOgh0/AvFSwL2R1f4EuWTPoRSdIbJGTvPRrIUjHo7s2DDv8v/G', // 'agent123'
     name: 'Agent Smith',
     role: 'agent' as const
   },
   {
     id: '3',
     email: 'customer@travel.com',
-    password: '$2a$10$r8JqJZjZjZjZjZjZjZjZjZOqQqQqQqQqQqQqQqQqQqQqQqQqQqQq', // 'customer123'
+    password: '$2b$10$Jt6HwFmdmJrCuogbRfHt/uBZv4nuCU4QqlT19gGWCEYTHeV8TneKS', // 'customer123'
     name: 'John Doe',
     role: 'customer' as const
   }

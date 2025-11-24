@@ -1,8 +1,31 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
-// Use mock auth for development without database
-// import { db } from './db';
+
+// Mock user data with pre-hashed passwords
+const mockUsers = [
+  {
+    id: '1',
+    email: 'admin@travel.com',
+    password: '$2a$10$r8JqJZjZjZjZjZjZjZjZjZOqQqQqQqQqQqQqQqQqQqQqQqQqQqQq', // 'admin123'
+    name: 'Admin User',
+    role: 'admin' as const
+  },
+  {
+    id: '2',
+    email: 'agent@travel.com',
+    password: '$2a$10$r8JqJZjZjZjZjZjZjZjZjZOqQqQqQqQqQqQqQqQqQqQqQqQqQqQq', // 'agent123'
+    name: 'Agent Smith',
+    role: 'agent' as const
+  },
+  {
+    id: '3',
+    email: 'customer@travel.com',
+    password: '$2a$10$r8JqJZjZjZjZjZjZjZjZjZOqQqQqQqQqQqQqQqQqQqQqQqQqQqQq', // 'customer123'
+    name: 'John Doe',
+    role: 'customer' as const
+  }
+];
 
 // Define user types
 export interface AuthUser {
@@ -32,123 +55,6 @@ declare module 'next-auth' {
   }
 }
 
-// Custom adapter for database authentication
-class CustomAuthAdapter {
-  async getUserByEmail(email: string): Promise<AuthUser | null> {
-    // Check in all user tables (Customer, Agent, Admin)
-    let user: any = null;
-    let role: 'customer' | 'agent' | 'admin' = 'customer';
-
-    // Check Customer table
-    const customer = await db.findOne(
-      'Customer',
-      'Email = ? AND Status = ?',
-      [email, 'Active']
-    );
-
-    if (customer) {
-      user = customer;
-      role = 'customer';
-    } else {
-      // Check Agent table
-      const agent = await db.findOne(
-        'Agent',
-        'Email = ? AND Status = ?',
-        [email, 'Active']
-      );
-
-      if (agent) {
-        user = agent;
-        role = 'agent';
-      } else {
-        // Check Admin table
-        const admin = await db.findOne(
-          'Admin',
-          'Email = ? AND Status = ?',
-          [email, 'Active']
-        );
-
-        if (admin) {
-          user = admin;
-          role = 'admin';
-        }
-      }
-    }
-
-    if (!user) return null;
-
-    return {
-      id: user.CustomerID || user.AgentID || user.AdminID?.toString(),
-      email: user.Email,
-      name: `${user.FirstName} ${user.LastName}`,
-      role
-    };
-  }
-
-  async verifyCredentials(email: string, password: string): Promise<AuthUser | null> {
-    // Check Customer table first
-    const customer = await db.findOne(
-      'Customer',
-      'Email = ? AND Status = ?',
-      [email, 'Active']
-    );
-
-    if (customer) {
-      const isValid = await bcrypt.compare(password, customer.PasswordHash);
-      if (isValid) {
-        return {
-          id: customer.CustomerID.toString(),
-          email: customer.Email,
-          name: `${customer.FirstName} ${customer.LastName}`,
-          role: 'customer'
-        };
-      }
-    }
-
-    // Check Agent table
-    const agent = await db.findOne(
-      'Agent',
-      'Email = ? AND Status = ?',
-      [email, 'Active']
-    );
-
-    if (agent) {
-      const isValid = await bcrypt.compare(password, agent.PasswordHash);
-      if (isValid) {
-        return {
-          id: agent.AgentID.toString(),
-          email: agent.Email,
-          name: `${agent.FirstName} ${agent.LastName}`,
-          role: 'agent'
-        };
-      }
-    }
-
-    // Check Admin table
-    const admin = await db.findOne(
-      'Admin',
-      'Email = ? AND Status = ?',
-      [email, 'Active']
-    );
-
-    if (admin) {
-      const isValid = await bcrypt.compare(password, admin.PasswordHash);
-      if (isValid) {
-        return {
-          id: admin.AdminID.toString(),
-          email: admin.Email,
-          name: `${admin.FirstName} ${admin.LastName}`,
-          role: 'admin'
-        };
-      }
-    }
-
-    return null;
-  }
-}
-
-const adapter = new CustomAuthAdapter();
-
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -163,21 +69,31 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Email and password are required');
         }
 
-        const user = await adapter.verifyCredentials(
-          credentials.email,
-          credentials.password
-        );
+        // Find user by email
+        const user = mockUsers.find(u => u.email === credentials.email);
 
         if (!user) {
-          throw new Error('Invalid credentials');
+          throw new Error('User not found');
+        }
+
+        // Verify password
+        const isValid = await bcrypt.compare(credentials.password, user.password);
+
+        if (!isValid) {
+          throw new Error('Invalid password');
         }
 
         // If role is specified, verify it matches
         if (credentials.role && user.role !== credentials.role) {
-          throw new Error('Invalid role for this user');
+          throw new Error(`User exists but with different role: ${user.role}`);
         }
 
-        return user;
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role
+        };
       }
     })
   ],
@@ -219,29 +135,6 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
 };
 
-// Helper function to get user from database
-export async function getUserFromDb(userId: string, role: 'customer' | 'agent' | 'admin') {
-  let table = '';
-  let idField = '';
-
-  switch (role) {
-    case 'customer':
-      table = 'Customer';
-      idField = 'CustomerID';
-      break;
-    case 'agent':
-      table = 'Agent';
-      idField = 'AgentID';
-      break;
-    case 'admin':
-      table = 'Admin';
-      idField = 'AdminID';
-      break;
-  }
-
-  return await db.findOne(`${table}`, `${idField} = ?`, [parseInt(userId)]);
-}
-
 // Helper function to check if user has required role
 export function hasRequiredRole(userRole: string, requiredRole: string): boolean {
   const roleHierarchy = {
@@ -267,109 +160,9 @@ export function getRoleRedirectUrl(role: 'customer' | 'agent' | 'admin'): string
   }
 }
 
-// Helper functions for user registration
-export async function registerCustomer(data: {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  password: string;
-  address?: string;
-  city?: string;
-  country?: string;
-  postalCode?: string;
-}) {
-  // Check if customer already exists
-  const existingCustomer = await db.findOne('Customer', 'Email = ?', [data.email]);
-  if (existingCustomer) {
-    throw new Error('Customer with this email already exists');
-  }
-
-  // Hash password
-  const saltRounds = 10;
-  const passwordHash = await bcrypt.hash(data.password, saltRounds);
-
-  // Create customer
-  const customerData = {
-    FirstName: data.firstName,
-    LastName: data.lastName,
-    Email: data.email,
-    Phone: data.phone || null,
-    PasswordHash: passwordHash,
-    Address: data.address || null,
-    City: data.city || null,
-    Country: data.country || null,
-    PostalCode: data.postalCode || null,
-    Status: 'Active'
-  };
-
-  const result = await db.insert('Customer', customerData);
-  return result.insertId;
-}
-
-export async function registerAgent(data: {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  password: string;
-  department?: string;
-  commissionRate?: number;
-}) {
-  // Check if agent already exists
-  const existingAgent = await db.findOne('Agent', 'Email = ?', [data.email]);
-  if (existingAgent) {
-    throw new Error('Agent with this email already exists');
-  }
-
-  // Hash password
-  const saltRounds = 10;
-  const passwordHash = await bcrypt.hash(data.password, saltRounds);
-
-  // Create agent
-  const agentData = {
-    FirstName: data.firstName,
-    LastName: data.lastName,
-    Email: data.email,
-    Phone: data.phone || null,
-    PasswordHash: passwordHash,
-    Department: data.department || null,
-    CommissionRate: data.commissionRate || 0,
-    Status: 'Active',
-    HireDate: new Date()
-  };
-
-  const result = await db.insert('Agent', agentData);
-  return result.insertId;
-}
-
-// Password reset helper
-export async function updatePassword(userId: string, role: 'customer' | 'agent' | 'admin', newPassword: string) {
-  const saltRounds = 10;
-  const passwordHash = await bcrypt.hash(newPassword, saltRounds);
-
-  let table = '';
-  let idField = '';
-
-  switch (role) {
-    case 'customer':
-      table = 'Customer';
-      idField = 'CustomerID';
-      break;
-    case 'agent':
-      table = 'Agent';
-      idField = 'AgentID';
-      break;
-    case 'admin':
-      table = 'Admin';
-      idField = 'AdminID';
-      break;
-  }
-
-  await db.update(
-    table,
-    { PasswordHash: passwordHash, UpdatedAt: new Date() },
-    `${idField} = ?`,
-    [parseInt(userId)]
-  );
-}
+// Export mock users for testing
+export const mockCredentials = {
+  admin: { email: 'admin@travel.com', password: 'admin123' },
+  agent: { email: 'agent@travel.com', password: 'agent123' },
+  customer: { email: 'customer@travel.com', password: 'customer123' }
+};

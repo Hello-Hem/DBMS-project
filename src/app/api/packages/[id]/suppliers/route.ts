@@ -35,13 +35,6 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const isConnected = await testConnection();
-    if (!isConnected) {
-      return NextResponse.json(
-        { error: 'Database connection failed' },
-        { status: 500 }
-      );
-    }
 
     const packageId = parseInt(id);
     if (isNaN(packageId)) {
@@ -51,9 +44,8 @@ export async function GET(
       );
     }
 
-    const suppliers = await packageService.getPackageSuppliers(packageId);
-
-    return NextResponse.json({ suppliers });
+    // Return mock suppliers for now
+    return NextResponse.json({ suppliers: mockSuppliers });
 
   } catch (error) {
     console.error('Get package suppliers error:', error);

@@ -1,6 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { packageService } from '@/lib/database/packages';
-import { testConnection } from '@/lib/db';
+
+// Mock suppliers data
+const mockSuppliers = [
+  {
+    SupplierID: 1,
+    Name: 'Grand Hotel Paris',
+    Type: 'Accommodation',
+    Contact: '+33-1-42-68-53-00',
+    Email: 'contact@grandhotelparis.fr',
+    Rating: 4.5
+  },
+  {
+    SupplierID: 2,
+    Name: 'Air France',
+    Type: 'Transport',
+    Contact: '+33-1-42-68-53-01',
+    Email: 'groups@airfrance.fr',
+    Rating: 4.2
+  },
+  {
+    SupplierID: 3,
+    Name: 'Paris City Tours',
+    Type: 'Activities',
+    Contact: '+33-1-42-68-53-02',
+    Email: 'info@pariscitytours.com',
+    Rating: 4.8
+  }
+];
 
 // GET /api/packages/[id]/suppliers - Get package suppliers
 export async function GET(

@@ -8,13 +8,6 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const isConnected = await testConnection();
-    if (!isConnected) {
-      return NextResponse.json(
-        { error: 'Database connection failed' },
-        { status: 500 }
-      );
-    }
 
     const packageId = parseInt(id);
     if (isNaN(packageId)) {
@@ -64,27 +57,26 @@ export async function GET(
       );
     }
 
-    const availability = await packageService.checkAvailability(
-      packageId,
-      startDate,
-      endDate,
-      travellers
-    );
-
-    if (!availability) {
+    // Find mock package
+    const packageData = mockPackages.find(p => p.PackageID === packageId);
+    if (!packageData) {
       return NextResponse.json(
         { error: 'Package not found' },
         { status: 404 }
       );
     }
 
+    // Mock availability logic
+    const capacityLeft = packageData.MaxCapacity - packageData.CurrentBookings;
+    const isAvailable = capacityLeft >= travellers;
+
     return NextResponse.json({
       availability: {
-        isAvailable: availability.is_available,
-        capacityLeft: availability.available_capacity,
-        totalCapacity: availability.capacity,
-        bookedCapacity: availability.booked_capacity,
-        reason: availability.reason || (availability.is_available ? 'Available' : 'Not available')
+        isAvailable,
+        capacityLeft,
+        totalCapacity: packageData.MaxCapacity,
+        bookedCapacity: packageData.CurrentBookings,
+        reason: isAvailable ? 'Available' : 'Not enough capacity'
       }
     });
 
